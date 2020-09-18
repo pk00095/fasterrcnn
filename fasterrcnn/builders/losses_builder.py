@@ -19,7 +19,7 @@ import functools
 from fasterrcnn.core import balanced_positive_negative_sampler as sampler
 from fasterrcnn.core import losses
 from fasterrcnn.utils import ops
-from object_detection.protos import losses_pb2
+from fasterrcnn.protos import losses_pb2
 
 
 def build(loss_config):

@@ -24,12 +24,12 @@ import six
 
 from six.moves import range
 from six.moves import zip
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tf_slim as slim
-from object_detection.core import standard_fields as fields
-from object_detection.utils import shape_utils
-from object_detection.utils import spatial_transform_ops as spatial_ops
-from object_detection.utils import static_shape
+from fasterrcnn.core import standard_fields as fields
+from fasterrcnn.utils import shape_utils
+from fasterrcnn.utils import spatial_transform_ops as spatial_ops
+from fasterrcnn.utils import static_shape
 
 
 matmul_crop_and_resize = spatial_ops.matmul_crop_and_resize

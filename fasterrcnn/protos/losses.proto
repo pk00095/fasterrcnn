@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package object_detection.protos;
+package fasterrcnn.protos;
 
 // Message for configuring the localization loss, classification loss and hard
 // example miner used for training object detection models. See core/losses.py
@@ -40,10 +40,10 @@ message Loss {
   enum ExpectedLossWeights {
     NONE = 0;
     // Use expected_classification_loss_by_expected_sampling
-    // from third_party/tensorflow_models/object_detection/utils/ops.py
+    // from third_party/tensorflow_models/fasterrcnn/utils/ops.py
     EXPECTED_SAMPLING = 1;
     // Use expected_classification_loss_by_reweighting_unmatched_anchors
-    // from third_party/tensorflow_models/object_detection/utils/ops.py
+    // from third_party/tensorflow_models/fasterrcnn/utils/ops.py
     REWEIGHTING_UNMATCHED_ANCHORS = 2;
   }
 

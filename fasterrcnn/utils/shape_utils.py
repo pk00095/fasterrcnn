@@ -22,7 +22,7 @@ from __future__ import print_function
 from six.moves import zip
 import tensorflow as tf
 
-from . import static_shape
+from fasterrcnn.utils import static_shape
 
 
 get_dim_as_int = static_shape.get_dim_as_int

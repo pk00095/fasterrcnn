@@ -22,7 +22,7 @@ Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun.
 
 import tensorflow as tf
 
-from . import anchor_generator
+from fasterrcnn.anchor_generators import anchor_generator
 from fasterrcnn.core import box_list
 
 

@@ -14,12 +14,12 @@
 # ==============================================================================
 
 """Builder function to construct tf-slim arg_scope for convolution, fc ops."""
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tf_slim as slim
 
 # from object_detection.core import freezable_batch_norm
-from object_detection.protos import hyperparams_pb2
-from object_detection.utils import context_manager
+from fasterrcnn.protos import hyperparams_pb2
+from fasterrcnn.utils import context_manager
 
 # pylint: enable=g-import-not-at-top
 
@@ -334,7 +334,7 @@ def _build_initializer(initializer, build_for_keras=False):
   """
   initializer_oneof = initializer.WhichOneof('initializer_oneof')
   if initializer_oneof == 'truncated_normal_initializer':
-    return tf.truncated_normal_initializer(
+    return tf.compat.v1.truncated_normal_initializer(
         mean=initializer.truncated_normal_initializer.mean,
         stddev=initializer.truncated_normal_initializer.stddev)
   if initializer_oneof == 'random_normal_initializer':
@@ -349,7 +349,7 @@ def _build_initializer(initializer, build_for_keras=False):
                                             mode].name
     if build_for_keras:
       if initializer.variance_scaling_initializer.uniform:
-        return tf.variance_scaling_initializer(
+        return tf.compat.v1.variance_scaling_initializer(
             scale=initializer.variance_scaling_initializer.factor,
             mode=mode.lower(),
             distribution='uniform')

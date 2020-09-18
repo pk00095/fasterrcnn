@@ -20,7 +20,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from six.moves import zip
-from .anchor_generators import grid_anchor_generator
+from fasterrcnn.anchor_generators import grid_anchor_generator
 # from object_detection.protos import anchor_generator_pb2
 
 

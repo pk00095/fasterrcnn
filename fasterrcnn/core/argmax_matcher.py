@@ -28,8 +28,8 @@ factory function for popular implementations.
 """
 import tensorflow as tf
 
-from . import matcher
-from ..utils import shape_utils
+from fasterrcnn.core import matcher
+from fasterrcnn.utils import shape_utils
 
 
 class ArgMaxMatcher(matcher.Matcher):

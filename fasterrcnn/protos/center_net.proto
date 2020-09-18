@@ -1,9 +1,9 @@
 syntax = "proto2";
 
-package object_detection.protos;
+package fasterrcnn.protos;
 
-import "object_detection/protos/image_resizer.proto";
-import "object_detection/protos/losses.proto";
+import "fasterrcnn/protos/image_resizer.proto";
+import "fasterrcnn/protos/losses.proto";
 
 // Configuration for the CenterNet meta architecture from the "Objects as
 // Points" paper [1]
@@ -37,7 +37,7 @@ message CenterNet {
     // Localization loss configuration for object scale and offset losses.
     optional LocalizationLoss localization_loss = 8;
   }
-  optional ObjectDetection object_detection_task = 4;
+  optional ObjectDetection fasterrcnn_task = 4;
 
   // Parameters related to object center prediction. This is required for both
   // object detection and keypoint estimation tasks.

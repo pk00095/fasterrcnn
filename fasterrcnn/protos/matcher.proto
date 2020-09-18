@@ -1,9 +1,9 @@
 syntax = "proto2";
 
-package object_detection.protos;
+package fasterrcnn.protos;
 
-import "object_detection/protos/argmax_matcher.proto";
-import "object_detection/protos/bipartite_matcher.proto";
+import "fasterrcnn/protos/argmax_matcher.proto";
+import "fasterrcnn/protos/bipartite_matcher.proto";
 
 // Configuration proto for the matcher to be used in the object detection
 // pipeline. See core/matcher.py for details.

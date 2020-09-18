@@ -364,17 +364,4 @@ def build(model_config, is_training, add_summaries=True):
     return _build_faster_rcnn_model(getattr(model_config, 'faster_rcnn'), is_training,
                       add_summaries)
 
-if __name__ == '__main__':
 
-  from fasterrcnn.utils import config_util
-
-  pipeline_config_path='faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.config'
-  
-  configs = config_util.get_configs_from_pipeline_file(
-      pipeline_config_path)
-
-  model_config = configs['model']
-
-  # print(model_config)
-
-  build(model_config, True)

@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package object_detection.protos;
+package fasterrcnn.protos;
 
 // Messages for configuring the optimizing strategy for training object
 // detection models.
@@ -86,7 +86,7 @@ message ManualStepLearningRate {
 }
 
 // Configuration message for a cosine decaying learning rate as defined in
-// object_detection/utils/learning_schedules.py
+// fasterrcnn/utils/learning_schedules.py
 message CosineDecayLearningRate {
   optional float learning_rate_base = 1 [default = 0.002];
   optional uint32 total_steps = 2 [default = 4000000];

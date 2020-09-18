@@ -28,7 +28,7 @@ from abc import abstractmethod
 import six
 import tensorflow as tf
 
-from object_detection.core import box_list_ops
+from fasterrcnn.core import box_list_ops
 
 class RegionSimilarityCalculator(six.with_metaclass(ABCMeta, object)):
   """Abstract base class for region similarity calculator."""

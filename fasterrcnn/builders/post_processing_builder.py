@@ -19,7 +19,7 @@ import functools
 import tensorflow as tf
 # from object_detection.builders import calibration_builder
 from fasterrcnn.core import post_processing
-from object_detection.protos import post_processing_pb2
+from fasterrcnn.protos import post_processing_pb2
 
 
 def build(post_processing_config):

@@ -17,7 +17,7 @@
 
 import collections
 import tensorflow as tf
-from object_detection.protos import box_predictor_pb2
+from fasterrcnn.protos import box_predictor_pb2
 from fasterrcnn.predictors.heads import keras_box_head
 from fasterrcnn.predictors.heads import keras_class_head
 from fasterrcnn.predictors import mask_rcnn_keras_box_predictor

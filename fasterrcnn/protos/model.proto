@@ -1,10 +1,10 @@
 syntax = "proto2";
 
-package object_detection.protos;
+package fasterrcnn.protos;
 
-import "object_detection/protos/center_net.proto";
-import "object_detection/protos/faster_rcnn.proto";
-import "object_detection/protos/ssd.proto";
+import "fasterrcnn/protos/center_net.proto";
+import "fasterrcnn/protos/faster_rcnn.proto";
+import "fasterrcnn/protos/ssd.proto";
 
 // Top level configuration for DetectionModels.
 message DetectionModel {

@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package object_detection.protos;
+package fasterrcnn.protos;
 
 // Configuration proto for FasterRCNNBoxCoder. See
 // box_coders/faster_rcnn_box_coder.py for details.

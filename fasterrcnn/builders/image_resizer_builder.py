@@ -17,7 +17,7 @@ import functools
 import tensorflow as tf
 
 from fasterrcnn.core import preprocessor
-from object_detection.protos import image_resizer_pb2
+from fasterrcnn.protos import image_resizer_pb2
 
 
 def _tf_resize_method(resize_method):
