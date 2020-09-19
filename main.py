@@ -1,7 +1,7 @@
 import tensorflow as tf
 from fasterrcnn.utils import config_util
-from model_builder import build
-
+from model_builder import build as model_build
+import inputs
 import pdb
 
 def _compute_losses_and_predictions_dicts(
@@ -96,15 +96,30 @@ def _compute_losses_and_predictions_dicts(
 
 if __name__ == '__main__':
 
+    from fasterrcnn.protos import input_reader_pb2
+
+
     pipeline_config_path='faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.config'
     configs = config_util.get_configs_from_pipeline_file(
       pipeline_config_path)
     train_config = configs['train_config']
     model_config = configs['model']
+    train_input_config = configs['train_input_config']
 
-    detection_model = build(model_config, True)
+    detection_model = model_build(model_config, True, num_classes=90, min_dim=640, max_dim=640)
 
-    print(train_config.add_regularization_loss)
+    # print(train_config.add_regularization_loss)
+
+    train_input = inputs.train_input(
+          train_config=train_config,
+          train_input_config=train_input_config,
+          model_config=model_config,
+          batch_size=2,
+          num_classes=90,
+          min_dim=640,
+          max_dim=640)
+
+    # print(train_input)
 
     # detection_model._is_training = is_training  # pylint: disable=protected-access
     # tf.keras.backend.set_learning_phase(is_training)

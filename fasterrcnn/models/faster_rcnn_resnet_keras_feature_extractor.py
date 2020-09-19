@@ -22,6 +22,7 @@ https://arxiv.org/abs/1512.03385
 # import tensorflow.compat.v1 as tf
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras.applications.resnet import preprocess_input
 import faster_rcnn_meta_arch
 # from object_detection.models.keras_models import resnet_v1
 # from object_detection.utils import model_util
@@ -107,11 +108,13 @@ class FasterRCNNResnetKerasFeatureExtractor(
         tensor representing a batch of images.
 
     """
-    if resized_inputs.shape.as_list()[3] == 3:
-      channel_means = [123.68, 116.779, 103.939]
-      return resized_inputs - [[channel_means]]
-    else:
-      return resized_inputs
+
+    return preprocess_input(resized_inputs)
+    # if resized_inputs.shape.as_list()[3] == 3:
+    #   channel_means = [123.68, 116.779, 103.939]
+    #   return resized_inputs - [[channel_means]]
+    # else:
+    #   return resized_inputs
 
   def get_proposal_feature_extractor_model(self, name=None):
     """Returns a model that extracts first stage RPN features.

@@ -107,7 +107,7 @@ def _build_faster_rcnn_keras_feature_extractor(
 
 
 
-def _build_faster_rcnn_model(frcnn_config, is_training, add_summaries):
+def _build_faster_rcnn_model(frcnn_config, is_training, add_summaries, num_classes, min_dim, max_dim):
   """Builds a Faster R-CNN or R-FCN detection model based on the model config.
 
   Builds R-FCN model if the second_stage_box_predictor in the config is of type
@@ -126,10 +126,9 @@ def _build_faster_rcnn_model(frcnn_config, is_training, add_summaries):
     ValueError: If frcnn_config.type is not recognized (i.e. not registered in
       model_class_map).
   """
-  num_classes = frcnn_config.num_classes
 
   # Do later same as retinanet
-  image_resizer_fn = image_resizer_builder.build(frcnn_config.image_resizer)
+  image_resizer_fn = image_resizer_builder.build(min_dimension=min_dim, max_dimension=max_dim)
 
   # if is_keras:
   feature_extractor = _build_faster_rcnn_keras_feature_extractor(
@@ -346,7 +345,7 @@ def _build_faster_rcnn_model(frcnn_config, is_training, add_summaries):
         **common_kwargs)
 
 
-def build(model_config, is_training, add_summaries=True):
+def build(model_config, is_training, num_classes, min_dim, max_dim, add_summaries=True):
     """Builds a DetectionModel based on the model config.
 
     Args:
@@ -362,6 +361,6 @@ def build(model_config, is_training, add_summaries=True):
     """
 
     return _build_faster_rcnn_model(getattr(model_config, 'faster_rcnn'), is_training,
-                      add_summaries)
+                      add_summaries, num_classes, min_dim, max_dim)
 
 
