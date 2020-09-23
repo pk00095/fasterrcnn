@@ -106,7 +106,7 @@ if __name__ == '__main__':
     model_config = configs['model']
     train_input_config = configs['train_input_config']
 
-    detection_model = model_build(model_config, True, num_classes=90, min_dim=640, max_dim=640)
+    detection_model = model_build(model_config, True, num_classes=4, min_dim=640, max_dim=640)
 
     # print(train_config.add_regularization_loss)
 
@@ -119,7 +119,7 @@ if __name__ == '__main__':
           min_dim=640,
           max_dim=640)
 
-    # print(train_input)
+    print(train_input)
 
     # detection_model._is_training = is_training  # pylint: disable=protected-access
     # tf.keras.backend.set_learning_phase(is_training)

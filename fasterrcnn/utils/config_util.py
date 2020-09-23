@@ -27,6 +27,70 @@ from tensorflow.python.lib.io import file_io
 
 from fasterrcnn.protos import pipeline_pb2
 
+def get_context_feature_length(model_config):
+  """Returns context feature length from a given config.
+
+  Args:
+    model_config: A model config file.
+
+  Returns:
+    An integer specifying the fixed length of each feature in context_features.
+  """
+  meta_architecture = model_config.WhichOneof("model")
+  meta_architecture_config = getattr(model_config, meta_architecture)
+
+  if hasattr(meta_architecture_config, "context_config"):
+    return meta_architecture_config.context_config.context_feature_length
+
+
+def get_max_num_context_features(model_config):
+  """Returns maximum number of context features from a given config.
+
+  Args:
+    model_config: A model config file.
+
+  Returns:
+    An integer specifying the max number of context features if the model
+      config contains context_config, None otherwise
+
+  """
+  meta_architecture = model_config.WhichOneof("model")
+  meta_architecture_config = getattr(model_config, meta_architecture)
+
+  if hasattr(meta_architecture_config, "context_config"):
+    return meta_architecture_config.context_config.max_num_context_features
+
+
+# def get_spatial_image_size(image_resizer_config):
+#   """Returns expected spatial size of the output image from a given config.
+
+#   Args:
+#     image_resizer_config: An image_resizer_pb2.ImageResizer.
+
+#   Returns:
+#     A list of two integers of the form [height, width]. `height` and `width` are
+#     set  -1 if they cannot be determined during graph construction.
+
+#   Raises:
+#     ValueError: If the model type is not recognized.
+#   """
+#   if image_resizer_config.HasField("fixed_shape_resizer"):
+#     return [
+#         image_resizer_config.fixed_shape_resizer.height,
+#         image_resizer_config.fixed_shape_resizer.width
+#     ]
+#   if image_resizer_config.HasField("keep_aspect_ratio_resizer"):
+#     if image_resizer_config.keep_aspect_ratio_resizer.pad_to_max_dimension:
+#       return [image_resizer_config.keep_aspect_ratio_resizer.max_dimension] * 2
+#     else:
+#       return [-1, -1]
+#   if image_resizer_config.HasField(
+#       "identity_resizer") or image_resizer_config.HasField(
+#           "conditional_shape_resizer"):
+#     return [-1, -1]
+#   raise ValueError("Unknown image resizer type.")
+
+
 def get_configs_from_pipeline_file(pipeline_config_path, config_override=None):
   """Reads config from a file containing pipeline_pb2.TrainEvalPipelineConfig.
 

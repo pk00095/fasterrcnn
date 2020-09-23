@@ -33,23 +33,6 @@ from fasterrcnn.builders import decoder_builder
 from fasterrcnn.protos import input_reader_pb2
 
 
-def make_initializable_iterator(dataset):
-  """Creates an iterator, and initializes tables.
-
-  This is useful in cases where make_one_shot_iterator wouldn't work because
-  the graph contains a hash table that needs to be initialized.
-
-  Args:
-    dataset: A `tf.data.Dataset` object.
-
-  Returns:
-    A `tf.data.Iterator`.
-  """
-  iterator = dataset.make_initializable_iterator()
-  tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
-  return iterator
-
-
 def read_dataset(file_read_func, input_files, config,
                  filename_shard_fn=None):
   """Reads a dataset, and handles repetition and shuffling.
@@ -72,51 +55,42 @@ def read_dataset(file_read_func, input_files, config,
     RuntimeError: If no files are found at the supplied path(s).
   """
   # Shard, shuffle, and read files.
-  filenames = tf.gfile.Glob(input_files)
-  if not filenames:
-    raise RuntimeError('Did not find any input files matching the glob pattern '
-                       '{}'.format(input_files))
-  num_readers = config.num_readers
-  if num_readers > len(filenames):
-    num_readers = len(filenames)
-    tf.logging.warning('num_readers has been reduced to %d to match input file '
-                       'shards.' % num_readers)
-  filename_dataset = tf.data.Dataset.from_tensor_slices(filenames)
-  if config.shuffle:
-    filename_dataset = filename_dataset.shuffle(
-        config.filenames_shuffle_buffer_size)
-  elif num_readers > 1:
-    tf.logging.warning('`shuffle` is false, but the input data stream is '
-                       'still slightly shuffled since `num_readers` > 1.')
-  if filename_shard_fn:
-    filename_dataset = filename_shard_fn(filename_dataset)
+  filenames = tf.data.Dataset.list_files(input_files).shuffle(buffer_size=256).repeat(-1)
+  dataset = dataset.interleave(
+          tf.data.TFRecordDataset, 
+          num_parallel_calls=tf.data.experimental.AUTOTUNE,
+          deterministic=False)
+  # if not filenames:
+  #   raise RuntimeError('Did not find any input files matching the glob pattern '
+  #                      '{}'.format(input_files))
+  # num_readers = config.num_readers
+  # if num_readers > len(filenames):
+  #   num_readers = len(filenames)
+  #   tf.logging.warning('num_readers has been reduced to %d to match input file '
+  #                      'shards.' % num_readers)
+  # filename_dataset = tf.data.Dataset.from_tensor_slices(filenames)
+  # if config.shuffle:
+  #   filename_dataset = filename_dataset.shuffle(
+  #       config.filenames_shuffle_buffer_size)
+  # elif num_readers > 1:
+  #   tf.logging.warning('`shuffle` is false, but the input data stream is '
+  #                      'still slightly shuffled since `num_readers` > 1.')
+  # if filename_shard_fn:
+  #   filename_dataset = filename_shard_fn(filename_dataset)
 
-  filename_dataset = filename_dataset.repeat(config.num_epochs or None)
-  records_dataset = filename_dataset.apply(
-      tf.data.experimental.parallel_interleave(
-          file_read_func,
-          cycle_length=num_readers,
-          block_length=config.read_block_length,
-          sloppy=config.shuffle))
+  # filename_dataset = filename_dataset.repeat(-1)
+  # records_dataset = filename_dataset.apply(
+  #     tf.data.experimental.parallel_interleave(
+  #         file_read_func,
+  #         cycle_length=num_readers,
+  #         block_length=config.read_block_length,
+  #         sloppy=config.shuffle))
   if config.shuffle:
     records_dataset = records_dataset.shuffle(config.shuffle_buffer_size)
   return records_dataset
 
 
-def shard_function_for_context(input_context):
-  """Returns a function that shards filenames based on the input context."""
-
-  if input_context is None:
-    return None
-
-  def shard_fn(dataset):
-    return dataset.shard(
-        input_context.num_input_pipelines, input_context.input_pipeline_id)
-
-  return shard_fn
-
-
-def build(input_reader_config, batch_size, transform_input_data_fn=None):
+def build(input_reader_config, batch_size, transform_input_data_fn):
   """Builds a tf.data.Dataset.
 
   Builds a tf.data.Dataset by applying the `transform_input_data_fn` on all
@@ -151,30 +125,36 @@ def build(input_reader_config, batch_size, transform_input_data_fn=None):
     if not config.input_path:
       raise ValueError('At least one input path must be specified in '
                        '`input_reader_config`.')
-    def dataset_map_fn(dataset, fn_to_map, batch_size=None,
-                       input_reader_config=None):
-      """Handles whether or not to use the legacy map function.
+    # def dataset_map_fn(dataset, fn_to_map, batch_size=None,
+    #                    input_reader_config=None):
+    #   """Handles whether or not to use the legacy map function.
 
-      Args:
-        dataset: A tf.Dataset.
-        fn_to_map: The function to be mapped for that dataset.
-        batch_size: Batch size. If batch size is None, no batching is performed.
-        input_reader_config: A input_reader_pb2.InputReader object.
+    #   Args:
+    #     dataset: A tf.Dataset.
+    #     fn_to_map: The function to be mapped for that dataset.
+    #     batch_size: Batch size. If batch size is None, no batching is performed.
+    #     input_reader_config: A input_reader_pb2.InputReader object.
 
-      Returns:
-        A tf.data.Dataset mapped with fn_to_map.
-      """
-      dataset = dataset.map(fn_to_map, tf.data.experimental.AUTOTUNE)
-      return dataset
+    #   Returns:
+    #     A tf.data.Dataset mapped with fn_to_map.
+    #   """
+    #   dataset = dataset.map(fn_to_map, tf.data.experimental.AUTOTUNE)
+    #   return dataset
+
+    dataset = tf.data.Dataset.list_files(config.input_path).shuffle(buffer_size=256).repeat(-1)
+    dataset = dataset.interleave(
+          tf.data.TFRecordDataset, 
+          num_parallel_calls=tf.data.experimental.AUTOTUNE,
+          deterministic=False)
       
-    shard_fn = shard_function_for_context(input_context)
-    if input_context is not None:
-      batch_size = input_context.get_per_replica_batch_size(batch_size)
-    dataset = read_dataset(
-        functools.partial(tf.data.TFRecordDataset, buffer_size=8 * 1000 * 1000),
-        config.input_path[:], input_reader_config, filename_shard_fn=shard_fn)
-    if input_reader_config.sample_1_of_n_examples > 1:
-      dataset = dataset.shard(input_reader_config.sample_1_of_n_examples, 0)
+    # shard_fn = shard_function_for_context(input_context=None)
+    # if input_context is not None:
+    #   batch_size = input_context.get_per_replica_batch_size(batch_size)
+    # dataset = read_dataset(
+    #     functools.partial(tf.data.TFRecordDataset, buffer_size=8 * 1000 * 1000),
+    #     config.input_path[:], input_reader_config, filename_shard_fn=shard_fn)
+    # if input_reader_config.sample_1_of_n_examples > 1:
+    #   dataset = dataset.shard(input_reader_config.sample_1_of_n_examples, 0)
     # TODO(rathodv): make batch size a required argument once the old binaries
     # are deleted.
     dataset = dataset.map(decoder.decode, tf.data.experimental.AUTOTUNE)
@@ -182,8 +162,8 @@ def build(input_reader_config, batch_size, transform_input_data_fn=None):
     # if reduce_to_frame_fn:
     #   dataset = reduce_to_frame_fn(dataset, dataset_map_fn, batch_size,
     #                                input_reader_config)
-    if transform_input_data_fn is not None:
-      dataset = dataset.map(transform_input_data_fn, tf.data.experimental.AUTOTUNE)
+    # if transform_input_data_fn is not None:
+    #   dataset = dataset.map(transform_input_data_fn, tf.data.experimental.AUTOTUNE)
 
     dataset = dataset.batch(batch_size, drop_remainder=True)
     dataset = dataset.prefetch(input_reader_config.num_prefetch_batches)

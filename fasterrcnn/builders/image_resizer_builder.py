@@ -19,7 +19,6 @@ import tensorflow as tf
 from fasterrcnn.core import preprocessor
 # from fasterrcnn.protos import image_resizer_pb2
 
-
 def build(min_dimension, max_dimension):
   """Builds callable for image resizing operations.
 

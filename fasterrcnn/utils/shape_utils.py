@@ -182,7 +182,7 @@ def combined_static_and_dynamic_shape(tensor):
       combined_shape.append(dynamic_tensor_shape[index])
   return combined_shape
 
-
+@tf.function
 def static_or_dynamic_map_fn(fn, elems, dtype=None,
                              parallel_iterations=32, back_prop=True):
   """Runs map_fn as a (static) for loop when possible.
@@ -467,7 +467,7 @@ def expand_first_dimension(inputs, dims):
 
   return inputs_reshaped
 
-
+@tf.function
 def resize_images_and_return_shapes(inputs, image_resizer_fn):
   """Resizes images using the given function and returns their true shapes.
 
@@ -489,7 +489,7 @@ def resize_images_and_return_shapes(inputs, image_resizer_fn):
 
   # TODO(jonathanhuang): revisit whether to always use batch size as
   # the number of parallel iterations vs allow for dynamic batching.
-  outputs = static_or_dynamic_map_fn(
+  outputs = tf.map_fn(
       image_resizer_fn,
       elems=inputs,
       dtype=[tf.float32, tf.int32])

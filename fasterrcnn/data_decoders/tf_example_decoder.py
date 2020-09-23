@@ -84,7 +84,7 @@ class _ClassTensorHandler(slim_example_decoder.Tensor):
     # in the label map.
     # try to load the tf v2 lookup
     lookup = tf.lookup
-    hash_table_class = tf.StaticHashTable
+    hash_table_class = lookup.StaticHashTable
 
     name_to_id_table = hash_table_class(
         initializer=lookup.KeyValueTensorInitializer(
@@ -169,28 +169,18 @@ class TfExampleDecoder(data_decoder.DataDecoder):
     # other decoders to handle label maps similarly.
     del use_display_name
     self.keys_to_features = {
-        'image/encoded':
-            tf.io.FixedLenFeature((), tf.string, default_value=''),
-        'image/format':
-            tf.io.FixedLenFeature((), tf.string, default_value='jpeg'),
-        'image/filename':
-            tf.io.FixedLenFeature((), tf.string, default_value=''),
-        'image/key/sha256':
-            tf.io.FixedLenFeature((), tf.string, default_value=''),
-        'image/source_id':
-            tf.io.FixedLenFeature((), tf.string, default_value=''),
         'image/height':
             tf.io.FixedLenFeature((), tf.int64, default_value=1),
         'image/width':
             tf.io.FixedLenFeature((), tf.int64, default_value=1),
-        # Image-level labels.
-        'image/class/text':
-            tf.io.VarLenFeature(tf.string),
-        'image/class/label':
-            tf.io.VarLenFeature(tf.int64),
-        'image/class/confidence':
-            tf.io.VarLenFeature(tf.float32),
-        # Object boxes and classes.
+        'image/filename':
+            tf.io.FixedLenFeature((), tf.string, default_value=''),
+        'image/source_id':
+            tf.io.FixedLenFeature((), tf.string, default_value=''),
+        'image/encoded':
+            tf.io.FixedLenFeature((), tf.string, default_value=''),
+        'image/format':
+            tf.io.FixedLenFeature((), tf.string, default_value='jpeg'),
         'image/object/bbox/xmin':
             tf.io.VarLenFeature(tf.float32),
         'image/object/bbox/xmax':
@@ -203,163 +193,84 @@ class TfExampleDecoder(data_decoder.DataDecoder):
             tf.io.VarLenFeature(tf.int64),
         'image/object/class/text':
             tf.io.VarLenFeature(tf.string),
-        'image/object/area':
-            tf.io.VarLenFeature(tf.float32),
-        'image/object/is_crowd':
-            tf.io.VarLenFeature(tf.int64),
-        'image/object/difficult':
-            tf.io.VarLenFeature(tf.int64),
-        'image/object/group_of':
-            tf.io.VarLenFeature(tf.int64),
-        'image/object/weight':
-            tf.io.VarLenFeature(tf.float32),
-
     }
     # We are checking `dct_method` instead of passing it directly in order to
     # ensure TF version 1.6 compatibility.
-    if dct_method:
-      image = slim_example_decoder.Image(
-          image_key='image/encoded',
-          format_key='image/format',
-          channels=3,
-          dct_method=dct_method)
-      additional_channel_image = slim_example_decoder.Image(
-          image_key='image/additional_channels/encoded',
-          format_key='image/format',
-          channels=1,
-          repeated=True,
-          dct_method=dct_method)
-    else:
-      image = slim_example_decoder.Image(
-          image_key='image/encoded', format_key='image/format', channels=3)
-      additional_channel_image = slim_example_decoder.Image(
-          image_key='image/additional_channels/encoded',
-          format_key='image/format',
-          channels=1,
-          repeated=True)
+    # if dct_method:
+    #   image = slim_example_decoder.Image(
+    #       image_key='image/encoded',
+    #       format_key='image/format',
+    #       channels=3,
+    #       dct_method=dct_method)
+    #   additional_channel_image = slim_example_decoder.Image(
+    #       image_key='image/additional_channels/encoded',
+    #       format_key='image/format',
+    #       channels=1,
+    #       repeated=True,
+    #       dct_method=dct_method)
+    # else:
+    image = slim_example_decoder.Image(
+        image_key='image/encoded', format_key='image/format', channels=3)
+    additional_channel_image = slim_example_decoder.Image(
+        image_key='image/additional_channels/encoded',
+        format_key='image/format',
+        channels=1,
+        repeated=True)
     self.items_to_handlers = {
         fields.InputDataFields.image:
             image,
         fields.InputDataFields.source_id: (
             slim_example_decoder.Tensor('image/source_id')),
-        fields.InputDataFields.key: (
-            slim_example_decoder.Tensor('image/key/sha256')),
+        # fields.InputDataFields.key: (
+        #     slim_example_decoder.Tensor('image/key/sha256')),
         fields.InputDataFields.filename: (
             slim_example_decoder.Tensor('image/filename')),
         # Image-level labels.
-        fields.InputDataFields.groundtruth_image_confidences: (
-            slim_example_decoder.Tensor('image/class/confidence')),
+        # fields.InputDataFields.groundtruth_image_confidences: (
+        #     slim_example_decoder.Tensor('image/class/confidence')),
         # Object boxes and classes.
         fields.InputDataFields.groundtruth_boxes: (
             slim_example_decoder.BoundingBox(['ymin', 'xmin', 'ymax', 'xmax'],
                                              'image/object/bbox/')),
-        fields.InputDataFields.groundtruth_area:
-            slim_example_decoder.Tensor('image/object/area'),
-        fields.InputDataFields.groundtruth_is_crowd: (
-            slim_example_decoder.Tensor('image/object/is_crowd')),
-        fields.InputDataFields.groundtruth_difficult: (
-            slim_example_decoder.Tensor('image/object/difficult')),
-        fields.InputDataFields.groundtruth_group_of: (
-            slim_example_decoder.Tensor('image/object/group_of')),
-        fields.InputDataFields.groundtruth_weights: (
-            slim_example_decoder.Tensor('image/object/weight')),
+        # fields.InputDataFields.groundtruth_area:
+        #     slim_example_decoder.Tensor('image/object/area'),
+        # fields.InputDataFields.groundtruth_is_crowd: (
+        #     slim_example_decoder.Tensor('image/object/is_crowd')),
+        # fields.InputDataFields.groundtruth_difficult: (
+        #     slim_example_decoder.Tensor('image/object/difficult')),
+        # fields.InputDataFields.groundtruth_group_of: (
+        #     slim_example_decoder.Tensor('image/object/group_of')),
+        # fields.InputDataFields.groundtruth_weights: (
+        #     slim_example_decoder.Tensor('image/object/weight')),
 
     }
-    if load_multiclass_scores:
-      self.keys_to_features[
-          'image/object/class/multiclass_scores'] = tf.io.VarLenFeature(tf.float32)
-      self.items_to_handlers[fields.InputDataFields.multiclass_scores] = (
-          slim_example_decoder.Tensor('image/object/class/multiclass_scores'))
 
-    if load_context_features:
-      self.keys_to_features[
-          'image/context_features'] = tf.io.VarLenFeature(tf.float32)
-      self.items_to_handlers[fields.InputDataFields.context_features] = (
-          slim_example_decoder.ItemHandlerCallback(
-              ['image/context_features', 'image/context_feature_length'],
-              self._reshape_context_features))
+    # if load_multiclass_scores:
+    #   self.keys_to_features[
+    #       'image/object/class/multiclass_scores'] = tf.io.VarLenFeature(tf.float32)
+    #   self.items_to_handlers[fields.InputDataFields.multiclass_scores] = (
+    #       slim_example_decoder.Tensor('image/object/class/multiclass_scores'))
 
-      self.keys_to_features[
-          'image/context_feature_length'] = tf.io.FixedLenFeature((), tf.int64)
-      self.items_to_handlers[fields.InputDataFields.context_feature_length] = (
-          slim_example_decoder.Tensor('image/context_feature_length'))
+    # if load_context_features:
+    #   self.keys_to_features[
+    #       'image/context_features'] = tf.io.VarLenFeature(tf.float32)
+    #   self.items_to_handlers[fields.InputDataFields.context_features] = (
+    #       slim_example_decoder.ItemHandlerCallback(
+    #           ['image/context_features', 'image/context_feature_length'],
+    #           self._reshape_context_features))
 
-    if num_additional_channels > 0:
-      self.keys_to_features[
-          'image/additional_channels/encoded'] = tf.io.FixedLenFeature(
-              (num_additional_channels,), tf.string)
-      self.items_to_handlers[
-          fields.InputDataFields.
-          image_additional_channels] = additional_channel_image
-    # self._num_keypoints = num_keypoints
-    # if num_keypoints > 0:
-    #   self.keys_to_features['image/object/keypoint/x'] = (
-    #       tf.io.VarLenFeature(tf.float32))
-    #   self.keys_to_features['image/object/keypoint/y'] = (
-    #       tf.io.VarLenFeature(tf.float32))
-    #   self.keys_to_features['image/object/keypoint/visibility'] = (
-    #       tf.io.VarLenFeature(tf.int64))
-    #   self.items_to_handlers[fields.InputDataFields.groundtruth_keypoints] = (
-    #       slim_example_decoder.ItemHandlerCallback(
-    #           ['image/object/keypoint/y', 'image/object/keypoint/x'],
-    #           self._reshape_keypoints))
-    #   kpt_vis_field = fields.InputDataFields.groundtruth_keypoint_visibilities
-    #   self.items_to_handlers[kpt_vis_field] = (
-    #       slim_example_decoder.ItemHandlerCallback(
-    #           ['image/object/keypoint/x', 'image/object/keypoint/visibility'],
-    #           self._reshape_keypoint_visibilities))
-    # if load_instance_masks:
-    #   if instance_mask_type in (input_reader_pb2.DEFAULT,
-    #                             input_reader_pb2.NUMERICAL_MASKS):
-    #     self.keys_to_features['image/object/mask'] = (
-    #         tf.io.VarLenFeature(tf.float32))
-    #     self.items_to_handlers[
-    #         fields.InputDataFields.groundtruth_instance_masks] = (
-    #             slim_example_decoder.ItemHandlerCallback(
-    #                 ['image/object/mask', 'image/height', 'image/width'],
-    #                 self._reshape_instance_masks))
-    #   elif instance_mask_type == input_reader_pb2.PNG_MASKS:
-    #     self.keys_to_features['image/object/mask'] = tf.io.VarLenFeature(tf.string)
-    #     self.items_to_handlers[
-    #         fields.InputDataFields.groundtruth_instance_masks] = (
-    #             slim_example_decoder.ItemHandlerCallback(
-    #                 ['image/object/mask', 'image/height', 'image/width'],
-    #                 self._decode_png_instance_masks))
-    #   else:
-    #     raise ValueError('Did not recognize the `instance_mask_type` option.')
-    # if load_dense_pose:
-    #   self.keys_to_features['image/object/densepose/num'] = (
-    #       tf.io.VarLenFeature(tf.int64))
-    #   self.keys_to_features['image/object/densepose/part_index'] = (
-    #       tf.io.VarLenFeature(tf.int64))
-    #   self.keys_to_features['image/object/densepose/x'] = (
-    #       tf.io.VarLenFeature(tf.float32))
-    #   self.keys_to_features['image/object/densepose/y'] = (
-    #       tf.io.VarLenFeature(tf.float32))
-    #   self.keys_to_features['image/object/densepose/u'] = (
-    #       tf.io.VarLenFeature(tf.float32))
-    #   self.keys_to_features['image/object/densepose/v'] = (
-    #       tf.io.VarLenFeature(tf.float32))
+    #   self.keys_to_features[
+    #       'image/context_feature_length'] = tf.io.FixedLenFeature((), tf.int64)
+    #   self.items_to_handlers[fields.InputDataFields.context_feature_length] = (
+    #       slim_example_decoder.Tensor('image/context_feature_length'))
+
+    # if num_additional_channels > 0:
+    #   self.keys_to_features[
+    #       'image/additional_channels/encoded'] = tf.io.FixedLenFeature(
+    #           (num_additional_channels,), tf.string)
     #   self.items_to_handlers[
-    #       fields.InputDataFields.groundtruth_dp_num_points] = (
-    #           slim_example_decoder.Tensor('image/object/densepose/num'))
-    #   self.items_to_handlers[fields.InputDataFields.groundtruth_dp_part_ids] = (
-    #       slim_example_decoder.ItemHandlerCallback(
-    #           ['image/object/densepose/part_index',
-    #            'image/object/densepose/num'], self._dense_pose_part_indices))
-    #   self.items_to_handlers[
-    #       fields.InputDataFields.groundtruth_dp_surface_coords] = (
-    #           slim_example_decoder.ItemHandlerCallback(
-    #               ['image/object/densepose/x', 'image/object/densepose/y',
-    #                'image/object/densepose/u', 'image/object/densepose/v',
-    #                'image/object/densepose/num'],
-    #               self._dense_pose_surface_coordinates))
-    # if load_track_id:
-    #   self.keys_to_features['image/object/track/label'] = (
-    #       tf.io.VarLenFeature(tf.int64))
-    #   self.items_to_handlers[
-    #       fields.InputDataFields.groundtruth_track_ids] = (
-    #           slim_example_decoder.Tensor('image/object/track/label'))
+    #       fields.InputDataFields.
+    #       image_additional_channels] = additional_channel_image
 
     if label_map_proto_file:
       # If the label_map_proto is provided, try to use it in conjunction with
@@ -369,20 +280,21 @@ class TfExampleDecoder(data_decoder.DataDecoder):
               'image/object/class/text', label_map_proto_file,
               default_value=''),
           slim_example_decoder.Tensor('image/object/class/label'))
-      image_label_handler = slim_example_decoder.BackupHandler(
-          _ClassTensorHandler(
-              fields.TfExampleFields.image_class_text,
-              label_map_proto_file,
-              default_value=''),
-          slim_example_decoder.Tensor(fields.TfExampleFields.image_class_label))
+      # image_label_handler = slim_example_decoder.BackupHandler(
+      #     _ClassTensorHandler(
+      #         fields.TfExampleFields.image_class_text,
+      #         label_map_proto_file,
+      #         default_value=''),
+      #     slim_example_decoder.Tensor(fields.TfExampleFields.image_class_label))
     else:
       label_handler = slim_example_decoder.Tensor('image/object/class/label')
-      image_label_handler = slim_example_decoder.Tensor(
-          fields.TfExampleFields.image_class_label)
+      # image_label_handler = slim_example_decoder.Tensor(
+      #     fields.TfExampleFields.image_class_label)
+
     self.items_to_handlers[
         fields.InputDataFields.groundtruth_classes] = label_handler
-    self.items_to_handlers[
-        fields.InputDataFields.groundtruth_image_classes] = image_label_handler
+    # self.items_to_handlers[
+    #     fields.InputDataFields.groundtruth_image_classes] = image_label_handler
 
     self._expand_hierarchy_labels = expand_hierarchy_labels
     self._ancestors_lut = None
@@ -459,10 +371,11 @@ class TfExampleDecoder(data_decoder.DataDecoder):
     decoder = slim_example_decoder.TFExampleDecoder(self.keys_to_features,
                                                     self.items_to_handlers)
     keys = decoder.list_items()
+
     tensors = decoder.decode(serialized_example, items=keys)
     tensor_dict = dict(zip(keys, tensors))
-    is_crowd = fields.InputDataFields.groundtruth_is_crowd
-    tensor_dict[is_crowd] = tf.cast(tensor_dict[is_crowd], dtype=tf.bool)
+    # is_crowd = fields.InputDataFields.groundtruth_is_crowd
+    # tensor_dict[is_crowd] = tf.cast(False, dtype=tf.bool)
     tensor_dict[fields.InputDataFields.image].set_shape([None, None, 3])
     tensor_dict[fields.InputDataFields.original_image_spatial_shape] = tf.shape(
         tensor_dict[fields.InputDataFields.image])[:2]
@@ -478,24 +391,24 @@ class TfExampleDecoder(data_decoder.DataDecoder):
           [tf.shape(tensor_dict[fields.InputDataFields.groundtruth_boxes])[0]],
           dtype=tf.float32)
 
-    tensor_dict[fields.InputDataFields.groundtruth_weights] = tf.cond(
-        tf.greater(
-            tf.shape(
-                tensor_dict[fields.InputDataFields.groundtruth_weights])[0],
-            0), lambda: tensor_dict[fields.InputDataFields.groundtruth_weights],
-        default_groundtruth_weights)
+    # tensor_dict[fields.InputDataFields.groundtruth_weights] = tf.cond(
+    #     tf.greater(
+    #         tf.shape(
+    #             tensor_dict[fields.InputDataFields.groundtruth_weights])[0],
+    #         0), lambda: tensor_dict[fields.InputDataFields.groundtruth_weights],
+    #     default_groundtruth_weights)
 
-    if fields.InputDataFields.groundtruth_keypoints in tensor_dict:
-      # Set all keypoints that are not labeled to NaN.
-      gt_kpt_fld = fields.InputDataFields.groundtruth_keypoints
-      gt_kpt_vis_fld = fields.InputDataFields.groundtruth_keypoint_visibilities
-      visibilities_tiled = tf.tile(
-          tf.expand_dims(tensor_dict[gt_kpt_vis_fld], -1),
-          [1, 1, 2])
-      tensor_dict[gt_kpt_fld] = tf.where(
-          visibilities_tiled,
-          tensor_dict[gt_kpt_fld],
-          np.nan * tf.ones_like(tensor_dict[gt_kpt_fld]))
+    # if fields.InputDataFields.groundtruth_keypoints in tensor_dict:
+    #   # Set all keypoints that are not labeled to NaN.
+    #   gt_kpt_fld = fields.InputDataFields.groundtruth_keypoints
+    #   gt_kpt_vis_fld = fields.InputDataFields.groundtruth_keypoint_visibilities
+    #   visibilities_tiled = tf.tile(
+    #       tf.expand_dims(tensor_dict[gt_kpt_vis_fld], -1),
+    #       [1, 1, 2])
+    #   tensor_dict[gt_kpt_fld] = tf.where(
+    #       visibilities_tiled,
+    #       tensor_dict[gt_kpt_fld],
+    #       np.nan * tf.ones_like(tensor_dict[gt_kpt_fld]))
 
     if self._expand_hierarchy_labels:
       input_fields = fields.InputDataFields

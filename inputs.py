@@ -21,7 +21,7 @@ from __future__ import print_function
 import functools
 
 import tensorflow as tf
-from tensorflow.keras.applications.resnet import preprocess_input as model_preprocess_fn
+from tensorflow.keras.applications.resnet import preprocess_input #as model_preprocess_fn
 
 from fasterrcnn.builders import dataset_builder
 from fasterrcnn.builders import image_resizer_builder
@@ -52,6 +52,28 @@ _LABEL_OFFSET = 1
     # 'dataset_build': dataset_builder.build,
     # 'model_build': model_builder.build,
 # }
+
+@tf.function
+def model_preprocess_fn(inputs, max_dimension, min_dimension):
+
+  image_resizer_fn = functools.partial(
+      preprocessor.resize_to_range,
+      min_dimension=min_dimension,
+      max_dimension=max_dimension,
+      method=tf.image.ResizeMethod.BILINEAR,
+      pad_to_max_dimension=True,
+      per_channel_pad_value=(0, 0, 0))
+
+  with tf.name_scope('Preprocessor'):
+      outputs = tf.map_fn(
+          image_resizer_fn,
+          elems=inputs,
+          dtype=[tf.float32, tf.int32])
+      resized_inputs = outputs[0]
+      true_image_shapes = outputs[1]
+
+  return (preprocess_input(resized_inputs),
+            true_image_shapes)
 
 
 def _multiclass_scores_or_one_hot_labels(multiclass_scores,
@@ -126,11 +148,13 @@ def assert_or_prune_invalid_boxes(boxes):
 
   return boxlist.get()
 
-
+@tf.function
 def transform_input_data(tensor_dict,
                          model_preprocess_fn,
                          image_resizer_fn,
                          num_classes,
+                         max_dimension, 
+                         min_dimension,
                          data_augmentation_fn=None,
                          merge_multiple_boxes=False,
                          retain_original_image=False,
@@ -246,21 +270,21 @@ def transform_input_data(tensor_dict,
               image_resizer_fn(channels, None)[0], tf.uint8)
 
   # Apply data augmentation ops.
-  if data_augmentation_fn is not None:
-    out_tensor_dict = data_augmentation_fn(out_tensor_dict)
+  # if data_augmentation_fn is not None:
+  #   out_tensor_dict = data_augmentation_fn(out_tensor_dict)
 
   # Apply model preprocessing ops and resize instance masks.
   image = out_tensor_dict[fields.InputDataFields.image]
   preprocessed_resized_image, true_image_shape = model_preprocess_fn(
-      tf.expand_dims(tf.cast(image, dtype=tf.float32), axis=0))
+      tf.expand_dims(tf.cast(image, dtype=tf.float32), axis=0), max_dimension, min_dimension)
 
   preprocessed_shape = tf.shape(preprocessed_resized_image)
   new_height, new_width = preprocessed_shape[1], preprocessed_shape[2]
 
   im_box = tf.stack([
       0.0, 0.0,
-      tf.to_float(new_height) / tf.to_float(true_image_shape[0, 0]),
-      tf.to_float(new_width) / tf.to_float(true_image_shape[0, 1])
+      tf.cast(new_height, tf.float32) / tf.cast(true_image_shape[0, 0], tf.float32),
+      tf.cast(new_width, tf.float32) / tf.cast(true_image_shape[0, 1], tf.float32)
   ])
 
   if fields.InputDataFields.groundtruth_boxes in tensor_dict:
@@ -358,7 +382,7 @@ def transform_input_data(tensor_dict,
 
   return out_tensor_dict
 
-
+@tf.function
 def pad_input_data_to_static_shapes(tensor_dict,
                                     max_num_boxes,
                                     num_classes,
@@ -533,7 +557,7 @@ def pad_input_data_to_static_shapes(tensor_dict,
             max_num_boxes))
   return padded_tensor_dict
 
-
+@tf.function
 def augment_input_data(tensor_dict, data_augmentation_options):
   """Applies data augmentation ops to input tensors.
 
@@ -550,32 +574,36 @@ def augment_input_data(tensor_dict, data_augmentation_options):
   tensor_dict[fields.InputDataFields.image] = tf.expand_dims(
       tf.cast(tensor_dict[fields.InputDataFields.image], dtype=tf.float32), 0)
 
-  include_instance_masks = (fields.InputDataFields.groundtruth_instance_masks
-                            in tensor_dict)
-  include_keypoints = (fields.InputDataFields.groundtruth_keypoints
-                       in tensor_dict)
-  include_keypoint_visibilities = (
-      fields.InputDataFields.groundtruth_keypoint_visibilities in tensor_dict)
+  # include_instance_masks = (fields.InputDataFields.groundtruth_instance_masks
+  #                           in tensor_dict)
+  # include_keypoints = (fields.InputDataFields.groundtruth_keypoints
+  #                      in tensor_dict)
+  # include_keypoint_visibilities = (
+  #     fields.InputDataFields.groundtruth_keypoint_visibilities in tensor_dict)
   include_label_weights = (fields.InputDataFields.groundtruth_weights
                            in tensor_dict)
-  include_label_confidences = (fields.InputDataFields.groundtruth_confidences
-                               in tensor_dict)
-  include_multiclass_scores = (fields.InputDataFields.multiclass_scores in
-                               tensor_dict)
-  dense_pose_fields = [fields.InputDataFields.groundtruth_dp_num_points,
-                       fields.InputDataFields.groundtruth_dp_part_ids,
-                       fields.InputDataFields.groundtruth_dp_surface_coords]
-  include_dense_pose = all(field in tensor_dict for field in dense_pose_fields)
+  # include_label_confidences = (fields.InputDataFields.groundtruth_confidences
+  #                              in tensor_dict)
+  # include_multiclass_scores = (fields.InputDataFields.multiclass_scores in
+  #                              tensor_dict)
+  # dense_pose_fields = [fields.InputDataFields.groundtruth_dp_num_points,
+  #                      fields.InputDataFields.groundtruth_dp_part_ids,
+  #                      fields.InputDataFields.groundtruth_dp_surface_coords]
+  # include_dense_pose = all(field in tensor_dict for field in dense_pose_fields)
+
+  print(data_augmentation_options)
   tensor_dict = preprocessor.preprocess(
       tensor_dict, data_augmentation_options,
-      func_arg_map=preprocessor.get_default_func_arg_map(
-          include_label_weights=include_label_weights,
-          include_label_confidences=include_label_confidences,
-          include_multiclass_scores=include_multiclass_scores,
-          include_instance_masks=include_instance_masks,
-          include_keypoints=include_keypoints,
-          include_keypoint_visibilities=include_keypoint_visibilities,
-          include_dense_pose=include_dense_pose))
+      # func_arg_map=preprocessor.get_default_func_arg_map(
+      #     include_label_weights=include_label_weights,
+          # include_label_confidences=include_label_confidences,
+          # include_multiclass_scores=include_multiclass_scores,
+          # include_instance_masks=include_instance_masks,
+          # include_keypoints=include_keypoints,
+          # include_keypoint_visibilities=include_keypoint_visibilities,
+          # include_dense_pose=include_dense_pose
+          # )
+  )
   tensor_dict[fields.InputDataFields.image] = tf.squeeze(
       tensor_dict[fields.InputDataFields.image], axis=0)
   return tensor_dict
@@ -587,7 +615,7 @@ def _get_labels_dict(input_dict):
       fields.InputDataFields.num_groundtruth_boxes,
       fields.InputDataFields.groundtruth_boxes,
       fields.InputDataFields.groundtruth_classes,
-      fields.InputDataFields.groundtruth_weights,
+      # fields.InputDataFields.groundtruth_weights,
   ]
   labels_dict = {}
   for key in required_label_keys:
@@ -638,7 +666,7 @@ def _replace_empty_string_with_random_number(string_tensor):
   empty_string = tf.constant('', dtype=tf.string, name='EmptyString')
 
   random_source_id = tf.as_string(
-      tf.random_uniform(shape=[], maxval=2**63 - 1, dtype=tf.int64))
+      tf.random.uniform(shape=[], maxval=2**63 - 1, dtype=tf.int64))
 
   out_string = tf.cond(
       tf.equal(string_tensor, empty_string),
@@ -654,7 +682,7 @@ def _get_features_dict(input_dict, include_source_id=False):
   source_id = _replace_empty_string_with_random_number(
       input_dict[fields.InputDataFields.source_id])
 
-  hash_from_source_id = tf.string_to_hash_bucket_fast(source_id, HASH_BINS)
+  hash_from_source_id = tf.strings.to_hash_bucket_fast(source_id, HASH_BINS)
   features = {
       fields.InputDataFields.image:
           input_dict[fields.InputDataFields.image],
@@ -792,6 +820,7 @@ def train_input(train_config, train_input_config,
 
   # num_classes = config_util.get_number_of_classes(model_config)
 
+  @tf.function
   def transform_and_pad_input_data_fn(tensor_dict):
     """Combines transform and pad operation."""
     data_augmentation_options = [
@@ -805,23 +834,35 @@ def train_input(train_config, train_input_config,
     # image_resizer_config = config_util.get_image_resizer_config(model_config)
     image_resizer_fn = image_resizer_builder.build(min_dimension=min_dim, max_dimension=max_dim)
     # keypoint_type_weight = train_input_config.keypoint_type_weight or None
-    transform_data_fn = functools.partial(
-        transform_input_data, model_preprocess_fn=model_preprocess_fn,
-        image_resizer_fn=image_resizer_fn,
-        num_classes=num_classes,
-        data_augmentation_fn=data_augmentation_fn,
-        merge_multiple_boxes=train_config.merge_multiple_label_boxes,
-        retain_original_image=train_config.retain_original_images,
-        use_multiclass_scores=train_config.use_multiclass_scores,
-        use_bfloat16=train_config.use_bfloat16,
-        )
+    # transform_data_fn = functools.partial(
+    #     transform_input_data, 
+    #     model_preprocess_fn=model_preprocess_fn,
+    #     image_resizer_fn=image_resizer_fn,
+    #     num_classes=num_classes,
+    #     data_augmentation_fn=None,
+    #     merge_multiple_boxes=train_config.merge_multiple_label_boxes,
+    #     retain_original_image=train_config.retain_original_images,
+    #     use_multiclass_scores=train_config.use_multiclass_scores,
+    #     use_bfloat16=train_config.use_bfloat16,
+    #     )
 
     tensor_dict = pad_input_data_to_static_shapes(
-        tensor_dict=transform_data_fn(tensor_dict),
+        tensor_dict=transform_input_data(
+                tensor_dict, 
+                max_dimension=max_dim, 
+                min_dimension=min_dim,
+                model_preprocess_fn=model_preprocess_fn,
+                image_resizer_fn=image_resizer_fn,
+                num_classes=num_classes,
+                data_augmentation_fn=None,
+                merge_multiple_boxes=train_config.merge_multiple_label_boxes,
+                retain_original_image=train_config.retain_original_images,
+                use_multiclass_scores=train_config.use_multiclass_scores,
+                use_bfloat16=train_config.use_bfloat16,
+                ),
         max_num_boxes=train_input_config.max_number_of_boxes,
         num_classes=num_classes,
-        spatial_image_shape=config_util.get_spatial_image_size(
-            image_resizer_config),
+        spatial_image_shape=[max_dim, max_dim],
         max_num_context_features=config_util.get_max_num_context_features(
             model_config),
         context_feature_length=config_util.get_context_feature_length(
